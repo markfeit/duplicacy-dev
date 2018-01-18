@@ -6,6 +6,10 @@
 
 NAME=duplicacy
 
+# Tag to be added to version number (e.g., 1.2.3-foo).  This must not
+# contain hyphens or quotes.
+VERSION_TAG=development
+
 # Location of original code, sans protocol
 DUPLICACY_GCHEN=github.com/gilbertchen/$(NAME)
 
@@ -32,23 +36,37 @@ default: build
 
 
 #
-# Application/removal of a patch to undo something in the source's
-# peculiar to Gilbert Chen's environment.  See
-# https://github.com/gilbertchen/duplicacy/issues/321.
+# Application/removal of patches:
+#
+# - Add $(VERSION_TAG) to version number
+#
+# - Undo something in the sources peculiar to Gilbert Chen's
+#   environment.  See details at
+#   https://github.com/gilbertchen/duplicacy/issues/321.
 #
 
 PATCHFILE=$(WORK)/src/duplicacy_azurestorage.go
 PATCH_ORIG=github.com/gilbertchen/azure-sdk-for-go/storage
 PATCH_FIXED=github.com/azure/azure-sdk-for-go/storage
 
-patch::
-	[ -e "$(PATCHFILE)" ] \
-	    && sed -i -e 's|$(PATCH_ORIG)|$(PATCH_FIXED)|g' $(PATCHFILE) \
-	    || true
+VERSIONFILE=$(WORK)/duplicacy/duplicacy_main.go
 
 unpatch::
+	[ -e "$(VERSIONFILE)" ] \
+	    && sed -i -e 's/\(app\.Version[^"]*".*[^-]*\)-[^"]\+/\1/g' \
+	        $(VERSIONFILE) \
+	    || true
 	[ -e "$(PATCHFILE)" ] \
 	    && sed -i -e 's|$(PATCH_FIXED)|$(PATCH_ORIG)|g' $(PATCHFILE) \
+	    || true
+
+patch: unpatch
+	[ -e "$(VERSIONFILE)" ] \
+	    && sed -i -e 's/\(app\.Version[^"]*"[^"]*\)/\1-$(VERSION_TAG)/g' \
+	        $(VERSIONFILE) \
+	    || true
+	[ -e "$(PATCHFILE)" ] \
+	    && sed -i -e 's|$(PATCH_ORIG)|$(PATCH_FIXED)|g' $(PATCHFILE) \
 	    || true
 
 
@@ -82,15 +100,11 @@ build: clone patch
 TO_CLEAN += $(BIN_LINK)
 
 
-# TODO: It would be nice to have a commit target that unpatches,
-# commits/pushes all sources and re-adds the patch.
-
 #
 # Housecleaning
 #
 
-# Note that this will fail if there are uncommitted changes other than
-# the patch.
+# Note that this will fail if there are uncommitted changes.
 clean: unpatch
 	@if [ -d "$(DUPLICACY_CLONE)" ] ; \
 	then \
