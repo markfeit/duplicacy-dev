@@ -65,15 +65,19 @@ $(BUILT):
 	ln -s "$(DUPLICACY_CLONE)" "$(WORK)"
 	$(MAKE) patch
 	$(GO) get -u "$(DUPLICACY_GCHEN)/..."
+	$(MAKE) unpatch
 	touch $@
 TO_CLEAN += $(WORK) $(NAME)
 
 clone: $(BUILT)
 
+
+
 build: clone patch
 	rm -f $(BIN_LINK)
 	cd $(DUPLICACY_CLONE) \
 	    && $(GO) build duplicacy/duplicacy_main.go
+	$(MAKE) unpatch
 	ln -s "$(BIN_LINK_TO)" "$(BIN_LINK)"
 TO_CLEAN += $(BIN_LINK)
 
