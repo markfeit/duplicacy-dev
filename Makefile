@@ -92,8 +92,9 @@ clone: $(BUILT)
 
 
 build: clone patch
-	rm -f $(BIN_LINK)
+	rm -f $(BIN_LINK) $(GO_DIR)/bin/$(NAME)
 	cd $(DUPLICACY_CLONE) \
+	    && $(GO) clean \
 	    && $(GO) build duplicacy/duplicacy_main.go
 	$(MAKE) unpatch
 	ln -s "$(BIN_LINK_TO)" "$(BIN_LINK)"
