@@ -29,7 +29,7 @@ DUPLICACY_CLONE=$(GO_DIR)/src/$(DUPLICACY_GCHEN)
 WORK=work
 
 BIN_LINK=$(NAME)
-BIN_LINK_TO=$(GO_BIN)/$(NAME)
+BIN_LINK_TO=$(DUPLICACY_CLONE)/$(NAME)_main
 
 
 default: build
@@ -99,6 +99,36 @@ build: clone patch
 	$(MAKE) unpatch
 	ln -s "$(BIN_LINK_TO)" "$(BIN_LINK)"
 TO_CLEAN += $(BIN_LINK)
+
+
+#
+# Testing
+#
+
+TEST_STORAGE=wasabi
+TEST_STORAGE_CONF=$(DUPLICACY_CLONE)/src/test_storage.conf
+
+$(TEST_STORAGE_CONF):
+	@echo "No storage configuration in $@"
+	@false
+TO_CLEAN += $(TEST_STORAGE_CONF)
+
+test-storage: $(TEST_STORAGE_CONF)
+	cd $(DUPLICACY_CLONE) \
+	&& $(GO) test -run TestStorage ./src -storage $(TEST_STORAGE)
+TESTS += storage
+
+test-backupmanager: $(TEST_STORAGE_CONF)
+	cd $(DUPLICACY_CLONE) \
+	&& $(GO) test -run TestBackupManager ./src -storage $(TEST_STORAGE)
+TESTS += backupmanager
+
+
+test: build
+	$(MAKE) patch
+	$(MAKE) $(TESTS:%=test-%)
+	$(MAKE) unpatch
+
 
 
 #
