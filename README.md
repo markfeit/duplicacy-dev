@@ -2,7 +2,8 @@
 
 This directory contains a Makefile for cloning, maintaining and
 building forks of [Gilbert Chen's Duplicacy backup
-software](https://github.com/gilbertchen/duplicacy).
+software](https://github.com/gilbertchen/duplicacy).  It can also
+be used to clone and build the original sources.
 
 ## Setup and Initial Build
 
@@ -30,8 +31,8 @@ that symbolic link will disappear.)
 
 ## Housekeeping
 
-Before commiting changes, `make unpatch` will remove a change required
-to one of the source files that
+Before commiting changes, `make unpatch` will remove a change to one
+file that makes Duplicacy compile outside of Gilbert Chen's environment.
 
 A `make clean` will remove everything not distributed with this
 repository.  If changes to the sources other than the aforementioned
