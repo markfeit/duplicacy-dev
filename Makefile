@@ -8,21 +8,33 @@ NAME=duplicacy
 
 # Tag to be added to version number (e.g., 1.2.3-foo).  This must not
 # contain hyphens or quotes.
-VERSION_TAG=development
+# VERSION_TAG=wasabi20180227
 
 # Location of original code, sans protocol
 DUPLICACY_GCHEN=github.com/gilbertchen/$(NAME)
 
 # Forked respository
-REPO=git@github.com:markfeit/duplicacy.git
+#REPO=git@github.com:gilbertchen/$(NAME).git
+REPO=git@github.com:markfeit/$(NAME).git
+# Set this to check out a branch
+REPO_BRANCH=swift-v2
+
+ALT_GO := ./go
 
 
 # No user-serviceable parts below this point.
 
-GO_DIR=gopath
-GO_BIN=$(GO_DIR)/bin
+GO_DIR=./gopath
+GO_BIN=$(shell readlink -f '$(GO_DIR)/bin')
 GOPATH:=$(shell mkdir -p $(GO_DIR) && cd $(GO_DIR) && pwd -P)
-GO:=GOPATH=$(GOPATH) go
+
+
+ifdef ALT_GO
+  RUN_GO += $(shell readlink -f '$(ALT_GO)')/bin/go
+else
+  RUN_GO += go
+endif
+GO := GOPATH=$(GOPATH) GO111MODULE=off $(RUN_GO)
 
 DUPLICACY_CLONE=$(GO_DIR)/src/$(DUPLICACY_GCHEN)
 
@@ -51,24 +63,29 @@ PATCH_FIXED=github.com/azure/azure-sdk-for-go/storage
 
 VERSIONFILE=$(WORK)/duplicacy/duplicacy_main.go
 
+
 unpatch::
+ifneq ($(VERSION_TAG),)
 	[ -e "$(VERSIONFILE)" ] \
 	    && sed -i -e 's/\(app\.Version[^"]*".*[^-]*\)-[^"]\+/\1/g' \
 	        $(VERSIONFILE) \
 	    || true
+endif
 	[ -e "$(PATCHFILE)" ] \
 	    && sed -i -e 's|$(PATCH_FIXED)|$(PATCH_ORIG)|g' $(PATCHFILE) \
 	    || true
 
+
 patch: unpatch
+ifneq ($(VERSION_TAG),)
 	[ -e "$(VERSIONFILE)" ] \
 	    && sed -i -e 's/\(app\.Version[^"]*"[^"]*\)/\1-$(VERSION_TAG)/g' \
 	        $(VERSIONFILE) \
 	    || true
+endif
 	[ -e "$(PATCHFILE)" ] \
 	    && sed -i -e 's|$(PATCH_ORIG)|$(PATCH_FIXED)|g' $(PATCHFILE) \
 	    || true
-
 
 
 #
@@ -81,8 +98,11 @@ $(BUILT):
 	    || git clone "$(REPO)" "$(DUPLICACY_CLONE)"
 	rm -f "$(WORK)"
 	ln -s "$(DUPLICACY_CLONE)" "$(WORK)"
+ifdef REPO_BRANCH
+	git -C "$(WORK)" checkout "$(REPO_BRANCH)"
+endif
 	$(MAKE) patch
-	$(GO) get -u "$(DUPLICACY_GCHEN)/..."
+	$(GO) get -v -u "$(DUPLICACY_GCHEN)/..."
 	$(MAKE) unpatch
 	touch $@
 TO_CLEAN += $(WORK) $(NAME)
